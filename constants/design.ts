@@ -67,7 +67,7 @@ export const GUIDES: readonly Guide[] = Object.freeze([
   {
     id: 'sage',
     name: 'Sage',
-    voiceId: '9BWtsMINqrJLrRacOk9x',
+    voiceId: 'EXAVITQu4vr4xnSDxMaL',
     archetype: 'Feminine',
     personality: 'Warm, grounding, wise. Like a woman who has always known.',
   },
@@ -81,7 +81,7 @@ export const GUIDES: readonly Guide[] = Object.freeze([
   {
     id: 'akasha',
     name: 'Akasha',
-    voiceId: 'N2lVS1w4EtoT3dr4eOWO',
+    voiceId: 'SAz9YHcvj6GT2YYXdXww',
     archetype: 'Neutral',
     personality: 'Soft, ethereal, genderless. Like the space between thoughts.',
   },
