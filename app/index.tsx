@@ -5,6 +5,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { AmbientOrb } from '@/components/AmbientOrb';
 import { Brand } from '@/components/Brand';
+import { PhasePill } from '@/components/PhasePill';
 import { ReadinessRing } from '@/components/ReadinessRing';
 import {
   ANIMATION,
@@ -15,6 +16,7 @@ import {
   getDayPhase,
   recommendedModeForPhase,
 } from '@/constants/design';
+import { PHASES, computeCycleState } from '@/data/cycle';
 import { MODE_LABELS, type Mode } from '@/data/sessions';
 import {
   computeReadiness,
@@ -47,8 +49,21 @@ export default function HomeScreen() {
   const totalSessions = useRiteStore((s) => s.totalSessions);
   const { time, date, phase } = useClock();
 
-  const accent = PHASE_ACCENT[phase];
-  const recommendedMode = recommendedModeForPhase(phase);
+  const cycle = useRiteStore((s) => s.cycle);
+  const cycleState = useMemo(() => {
+    if (!cycle.enabled || !cycle.lastPeriodStart) return null;
+    return computeCycleState({
+      lastPeriodStart: cycle.lastPeriodStart,
+      cycleLengthDays: cycle.cycleLengthDays,
+      periodLengthDays: cycle.periodLengthDays,
+    });
+  }, [cycle]);
+
+  const timeAccent = PHASE_ACCENT[phase];
+  const accent = cycleState ? PHASES[cycleState.phase].accent : timeAccent;
+  const recommendedMode = cycleState
+    ? PHASES[cycleState.phase].recommendedMode
+    : recommendedModeForPhase(phase);
 
   const readiness = useMemo(
     () =>
@@ -111,6 +126,12 @@ export default function HomeScreen() {
           label={readinessLabel(readiness)}
           accentColor={accent}
         />
+
+        {cycleState ? (
+          <Pressable onPress={() => router.push('/cycle')}>
+            <PhasePill phase={cycleState.phase} cycleDay={cycleState.cycleDay} />
+          </Pressable>
+        ) : null}
 
         <View style={{ width: '100%', gap: 12 }}>
           {(['stolen', 'winddown'] as Mode[]).map((mode) => {
@@ -245,7 +266,7 @@ export default function HomeScreen() {
           <View />
         )}
 
-        <Pressable onPress={() => router.push('/onboarding')}>
+        <Pressable onPress={() => router.push('/settings')}>
           <Text
             style={{
               fontFamily: TYPOGRAPHY.family.sans,
@@ -255,7 +276,7 @@ export default function HomeScreen() {
               textTransform: 'uppercase',
             }}
           >
-            {guideName ?? '—'} · change
+            {guideName ?? '—'} · settings
           </Text>
         </Pressable>
       </View>

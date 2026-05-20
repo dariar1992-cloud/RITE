@@ -17,6 +17,14 @@ export interface SessionRecord {
   completedAt: string; // ISO
 }
 
+export interface CycleTracking {
+  enabled: boolean;
+  lastPeriodStart: string | null; // YYYY-MM-DD local
+  cycleLengthDays: number;
+  periodLengthDays: number;
+  periodLog: string[]; // YYYY-MM-DD, newest first, capped at 24
+}
+
 interface UserPreferences {
   selectedVoiceId: string | null;
   selectedGuideName: GuideName | null;
@@ -26,6 +34,7 @@ interface UserPreferences {
   onboarded: boolean;
   history: SessionRecord[]; // capped at 30, newest first
   lastChargeDelta: number | null;
+  cycle: CycleTracking;
 }
 
 interface CurrentSession {
@@ -50,11 +59,30 @@ interface RiteActions {
   resetSession: () => void;
   setChargeAfter: (n: number) => void;
   completeSession: () => SessionRecord | null;
+  enableCycleTracking: (args: {
+    lastPeriodStart: string;
+    cycleLengthDays: number;
+    periodLengthDays: number;
+  }) => void;
+  logPeriodStart: (dateYYYYMMDD: string) => void;
+  updateCycleConfig: (args: {
+    cycleLengthDays?: number;
+    periodLengthDays?: number;
+  }) => void;
+  disableCycleTracking: () => void;
 }
 
 type RiteStore = UserPreferences & {
   current: CurrentSession;
 } & RiteActions;
+
+const initialCycle: CycleTracking = {
+  enabled: false,
+  lastPeriodStart: null,
+  cycleLengthDays: 28,
+  periodLengthDays: 5,
+  periodLog: [],
+};
 
 const initialPreferences: UserPreferences = {
   selectedVoiceId: null,
@@ -65,6 +93,7 @@ const initialPreferences: UserPreferences = {
   onboarded: false,
   history: [],
   lastChargeDelta: null,
+  cycle: initialCycle,
 };
 
 const initialCurrent: CurrentSession = {
@@ -147,6 +176,41 @@ export const useRiteStore = create<RiteStore>()(
       setChargeAfter: (n) =>
         set((s) => ({ current: { ...s.current, chargeAfter: n } })),
 
+      enableCycleTracking: ({ lastPeriodStart, cycleLengthDays, periodLengthDays }) =>
+        set((s) => ({
+          cycle: {
+            enabled: true,
+            lastPeriodStart,
+            cycleLengthDays,
+            periodLengthDays,
+            periodLog: [lastPeriodStart, ...s.cycle.periodLog.filter((d) => d !== lastPeriodStart)].slice(0, 24),
+          },
+        })),
+
+      logPeriodStart: (date) =>
+        set((s) => ({
+          cycle: {
+            ...s.cycle,
+            enabled: true,
+            lastPeriodStart: date,
+            periodLog: [date, ...s.cycle.periodLog.filter((d) => d !== date)].slice(0, 24),
+          },
+        })),
+
+      updateCycleConfig: ({ cycleLengthDays, periodLengthDays }) =>
+        set((s) => ({
+          cycle: {
+            ...s.cycle,
+            cycleLengthDays: cycleLengthDays ?? s.cycle.cycleLengthDays,
+            periodLengthDays: periodLengthDays ?? s.cycle.periodLengthDays,
+          },
+        })),
+
+      disableCycleTracking: () =>
+        set((s) => ({
+          cycle: { ...s.cycle, enabled: false },
+        })),
+
       completeSession: () => {
         const today = formatLocalDate(new Date());
         const state = get();
@@ -188,7 +252,7 @@ export const useRiteStore = create<RiteStore>()(
     }),
     {
       name: 'rite-store',
-      version: 2,
+      version: 3,
       storage,
       partialize: (s) => ({
         selectedVoiceId: s.selectedVoiceId,
@@ -199,16 +263,20 @@ export const useRiteStore = create<RiteStore>()(
         onboarded: s.onboarded,
         history: s.history,
         lastChargeDelta: s.lastChargeDelta,
+        cycle: s.cycle,
       }),
       migrate: (persistedState: unknown, version) => {
-        if (version < 2 && persistedState && typeof persistedState === 'object') {
-          return {
-            ...(persistedState as object),
-            history: [],
-            lastChargeDelta: null,
-          };
+        if (!persistedState || typeof persistedState !== 'object') {
+          return persistedState as RiteStore;
         }
-        return persistedState as RiteStore;
+        let next = { ...(persistedState as Record<string, unknown>) };
+        if (version < 2) {
+          next = { ...next, history: [], lastChargeDelta: null };
+        }
+        if (version < 3) {
+          next = { ...next, cycle: initialCycle };
+        }
+        return next as unknown as RiteStore;
       },
     }
   )

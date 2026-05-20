@@ -10,6 +10,7 @@ import { GoldButton } from '@/components/GoldButton';
 import { Waveform } from '@/components/Waveform';
 import { WisdomTransition } from '@/components/WisdomTransition';
 import { ANIMATION, COLORS, TYPOGRAPHY } from '@/constants/design';
+import { PHASES, computeCycleState } from '@/data/cycle';
 import {
   MODE_LABELS,
   STATE_OPENERS,
@@ -205,6 +206,7 @@ export default function SessionScreen() {
   const current = useRiteStore((s) => s.current);
   const advanceStep = useRiteStore((s) => s.advanceStep);
   const voiceId = useRiteStore((s) => s.selectedVoiceId);
+  const cycle = useRiteStore((s) => s.cycle);
 
   const mode = current.mode ?? 'stolen';
   const checkInState: CheckInState | null = current.currentState;
@@ -213,6 +215,24 @@ export default function SessionScreen() {
   const isLastStep = stepIndex === steps.length - 1;
   const step = steps[stepIndex];
   const stateOpener = checkInState ? STATE_OPENERS[checkInState] : null;
+
+  const phaseOpener = useMemo(() => {
+    if (!cycle.enabled || !cycle.lastPeriodStart) return null;
+    const cs = computeCycleState({
+      lastPeriodStart: cycle.lastPeriodStart,
+      cycleLengthDays: cycle.cycleLengthDays,
+      periodLengthDays: cycle.periodLengthDays,
+    });
+    if (!cs) return null;
+    return PHASES[cs.phase].opener;
+  }, [cycle]);
+
+  const combinedOpener = useMemo(() => {
+    const parts: string[] = [];
+    if (stateOpener) parts.push(stateOpener.display);
+    if (phaseOpener) parts.push(phaseOpener);
+    return parts.length ? parts.join(' ') : null;
+  }, [stateOpener, phaseOpener]);
 
   const [showingTransition, setShowingTransition] = useState(false);
   const [transitionQuote, setTransitionQuote] = useState<string>('');
@@ -279,7 +299,7 @@ export default function SessionScreen() {
         index={stepIndex}
         total={steps.length}
         voiceId={voiceId}
-        stateOpener={index0Opener(stepIndex, stateOpener)}
+        stateOpener={stepIndex === 0 ? combinedOpener : null}
       />
 
       <View style={{ paddingHorizontal: 28, paddingBottom: 32 }}>
@@ -296,7 +316,3 @@ export default function SessionScreen() {
   );
 }
 
-function index0Opener(stepIndex: number, opener: { display: string; spoken: string } | null) {
-  if (stepIndex !== 0 || !opener) return null;
-  return opener.display;
-}

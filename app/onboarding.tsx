@@ -30,8 +30,12 @@ export default function OnboardingScreen() {
   const onEnter = () => {
     if (!selected) return;
     setGuide(selected.name, selected.voiceId);
-    completeOnboarding();
-    router.replace('/');
+    if (!onboarded) {
+      completeOnboarding();
+      router.replace('/cycle-opt-in');
+    } else {
+      router.replace('/');
+    }
   };
 
   const onPreview = (g: Guide) => {
