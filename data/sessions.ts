@@ -129,3 +129,22 @@ export const MODE_LABELS: Record<Mode, { title: string; tagline: string; framing
     framing: 'Close the loop. Initiate shutdown protocol.',
   },
 };
+
+export const STATE_OPENERS: Record<CheckInState, { display: string; spoken: string }> = {
+  Scattered: {
+    display: 'Your attention is fractured. We will narrow it to one point.',
+    spoken: 'Your attention is fractured. We will narrow it to one point.',
+  },
+  Depleted: {
+    display: 'Your reserves are low. We will not push — we will refill.',
+    spoken: 'Your reserves are low. We will not push. We will refill.',
+  },
+  Wired: {
+    display: 'Your system is hot. We will slow the engine before it cracks.',
+    spoken: 'Your system is hot. We will slow the engine before it cracks.',
+  },
+  Heavy: {
+    display: 'Something is sitting on you. We will set it down for these minutes.',
+    spoken: 'Something is sitting on you. We will set it down for these minutes.',
+  },
+};

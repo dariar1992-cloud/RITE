@@ -89,3 +89,38 @@ export const GUIDES: readonly Guide[] = Object.freeze([
 
 export const WELCOME_SCRIPT =
   'Welcome. I am your guide. Take one breath, and let us begin.';
+
+export type DayPhase = 'dawn' | 'morning' | 'midday' | 'afternoon' | 'evening' | 'night';
+
+export function getDayPhase(date = new Date()): DayPhase {
+  const h = date.getHours();
+  if (h < 5) return 'night';
+  if (h < 8) return 'dawn';
+  if (h < 11) return 'morning';
+  if (h < 14) return 'midday';
+  if (h < 18) return 'afternoon';
+  if (h < 22) return 'evening';
+  return 'night';
+}
+
+export const PHASE_ACCENT: Record<DayPhase, string> = {
+  dawn: '#E8C870',
+  morning: '#E8C870',
+  midday: '#C9A53C',
+  afternoon: '#C9A53C',
+  evening: '#9A86C2',
+  night: '#6E5BA8',
+};
+
+export const PHASE_LABEL: Record<DayPhase, string> = {
+  dawn: 'Dawn',
+  morning: 'Morning',
+  midday: 'Midday',
+  afternoon: 'Afternoon',
+  evening: 'Evening',
+  night: 'Night',
+};
+
+export function recommendedModeForPhase(phase: DayPhase): 'stolen' | 'winddown' {
+  return phase === 'evening' || phase === 'night' ? 'winddown' : 'stolen';
+}

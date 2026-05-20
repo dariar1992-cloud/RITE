@@ -1,3 +1,4 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, Text, View, type PressableProps } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -44,32 +45,56 @@ export function GoldButton({
           scale.value = withTiming(1, { duration: 120 });
           onPressOut?.(e);
         }}
+        style={{ borderRadius: 999, overflow: 'hidden' }}
       >
-        <View
-          style={{
-            paddingVertical: 16,
-            paddingHorizontal: 24,
-            borderRadius: 999,
-            borderWidth: 1,
-            borderColor: isGhost ? COLORS.goldDim : COLORS.gold,
-            backgroundColor: isGhost ? 'transparent' : COLORS.gold,
-            alignItems: 'center',
-            opacity: disabled ? 0.4 : 1,
-          }}
-        >
-          <Text
+        {isGhost ? (
+          <View
             style={{
-              color: isGhost ? COLORS.gold : COLORS.obsidian,
-              fontFamily: TYPOGRAPHY.family.sansMedium,
-              fontSize: 13,
-              letterSpacing: TYPOGRAPHY.letterSpacing.caps * 13,
-              textTransform: 'uppercase',
+              paddingVertical: 16,
+              paddingHorizontal: 24,
+              borderRadius: 999,
+              borderWidth: 1,
+              borderColor: COLORS.goldDim,
+              backgroundColor: 'transparent',
+              alignItems: 'center',
+              opacity: disabled ? 0.4 : 1,
             }}
           >
-            {label}
-          </Text>
-        </View>
+            <ButtonLabel label={label} ghost />
+          </View>
+        ) : (
+          <LinearGradient
+            colors={[COLORS.goldGlow, COLORS.gold, '#A88828']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{
+              paddingVertical: 16,
+              paddingHorizontal: 24,
+              borderRadius: 999,
+              alignItems: 'center',
+              opacity: disabled ? 0.35 : 1,
+            }}
+          >
+            <ButtonLabel label={label} />
+          </LinearGradient>
+        )}
       </Pressable>
     </Animated.View>
+  );
+}
+
+function ButtonLabel({ label, ghost = false }: { label: string; ghost?: boolean }) {
+  return (
+    <Text
+      style={{
+        color: ghost ? COLORS.gold : COLORS.obsidian,
+        fontFamily: TYPOGRAPHY.family.sansMedium,
+        fontSize: 13,
+        letterSpacing: TYPOGRAPHY.letterSpacing.caps * 13,
+        textTransform: 'uppercase',
+      }}
+    >
+      {label}
+    </Text>
   );
 }

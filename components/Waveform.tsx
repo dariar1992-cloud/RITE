@@ -1,5 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { ANIMATION, COLORS } from '@/constants/design';
 
@@ -11,28 +16,42 @@ const BAR_COUNT = 7;
 const MIN_H = 4;
 const MAX_H = 26;
 
-function randomBars(): number[] {
-  return Array.from(
-    { length: BAR_COUNT },
-    () => MIN_H + Math.random() * (MAX_H - MIN_H)
+function Bar({ active }: { active: boolean }) {
+  const h = useSharedValue(MIN_H);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (!active) {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      h.value = withTiming(MIN_H, { duration: 200 });
+      return;
+    }
+    intervalRef.current = setInterval(() => {
+      const next = MIN_H + Math.random() * (MAX_H - MIN_H);
+      h.value = withTiming(next, { duration: ANIMATION.waveformIntervalMs });
+    }, ANIMATION.waveformIntervalMs);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [active, h]);
+
+  const style = useAnimatedStyle(() => ({ height: h.value }));
+
+  return (
+    <Animated.View
+      style={[
+        {
+          width: 2,
+          backgroundColor: active ? COLORS.gold : COLORS.goldDim,
+          borderRadius: 1,
+        },
+        style,
+      ]}
+    />
   );
 }
 
 export function Waveform({ active }: Props) {
-  const [bars, setBars] = useState<number[]>(() =>
-    Array(BAR_COUNT).fill(MIN_H)
-  );
-
-  useEffect(() => {
-    if (!active) {
-      setBars(Array(BAR_COUNT).fill(MIN_H));
-      return;
-    }
-    setBars(randomBars());
-    const id = setInterval(() => setBars(randomBars()), ANIMATION.waveformIntervalMs);
-    return () => clearInterval(id);
-  }, [active]);
-
   return (
     <View
       style={{
@@ -43,16 +62,8 @@ export function Waveform({ active }: Props) {
         height: MAX_H,
       }}
     >
-      {bars.map((h, i) => (
-        <View
-          key={i}
-          style={{
-            width: 2,
-            height: h,
-            backgroundColor: active ? COLORS.gold : COLORS.goldDim,
-            borderRadius: 1,
-          }}
-        />
+      {Array.from({ length: BAR_COUNT }, (_, i) => (
+        <Bar key={i} active={active} />
       ))}
     </View>
   );

@@ -1,33 +1,43 @@
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
+import { AmbientOrb } from '@/components/AmbientOrb';
 import { BreathingRing } from '@/components/BreathingRing';
 import { GoldButton } from '@/components/GoldButton';
 import { Waveform } from '@/components/Waveform';
-import { AmbientOrb } from '@/components/AmbientOrb';
+import { WisdomTransition } from '@/components/WisdomTransition';
 import { ANIMATION, COLORS, TYPOGRAPHY } from '@/constants/design';
 import {
   MODE_LABELS,
+  STATE_OPENERS,
   getSessionScript,
   getStepsForMode,
+  type CheckInState,
   type Step,
 } from '@/data/sessions';
 import { useVoice } from '@/hooks/useVoice';
 import { useRiteStore } from '@/store/useRiteStore';
+
+function stripAttribution(wisdom: string): string {
+  const idx = wisdom.indexOf(' — ');
+  return idx === -1 ? wisdom : wisdom.slice(0, idx);
+}
 
 function StepView({
   step,
   index,
   total,
   voiceId,
+  stateOpener,
 }: {
   step: Step;
   index: number;
   total: number;
   voiceId: string | null;
+  stateOpener: string | null;
 }) {
   const { play, stop, isPlaying, isLoading, error } = useVoice();
   const triggeredRef = useRef(false);
@@ -37,10 +47,13 @@ function StepView({
     if (!voiceId) return;
     triggeredRef.current = true;
     const id = setTimeout(() => {
-      play(getSessionScript(step), voiceId);
+      const script = stateOpener
+        ? `${stateOpener} ... ${getSessionScript(step)}`
+        : getSessionScript(step);
+      play(script, voiceId);
     }, ANIMATION.voiceAutoplayDelayMs);
     return () => clearTimeout(id);
-  }, [step, voiceId, play]);
+  }, [step, voiceId, play, stateOpener]);
 
   useEffect(() => {
     return () => {
@@ -52,7 +65,10 @@ function StepView({
     if (isPlaying) {
       stop();
     } else if (voiceId) {
-      play(getSessionScript(step), voiceId);
+      const script = stateOpener
+        ? `${stateOpener} ... ${getSessionScript(step)}`
+        : getSessionScript(step);
+      play(script, voiceId);
     }
   };
 
@@ -75,19 +91,35 @@ function StepView({
         </Text>
       </View>
 
-      <View style={{ alignItems: 'center', marginVertical: 18 }}>
-        <BreathingRing size={240} symbol={step.symbol} />
+      <View style={{ alignItems: 'center', marginVertical: 14 }}>
+        <BreathingRing size={220} symbol={step.symbol} />
       </View>
+
+      {index === 0 && stateOpener ? (
+        <Text
+          style={{
+            fontFamily: TYPOGRAPHY.family.serifItalic,
+            color: COLORS.gold,
+            fontSize: 15,
+            lineHeight: 22,
+            textAlign: 'center',
+            paddingHorizontal: 8,
+            marginBottom: 14,
+          }}
+        >
+          {stateOpener}
+        </Text>
+      ) : null}
 
       <Text
         style={{
           fontFamily: TYPOGRAPHY.family.serifItalic,
           color: COLORS.cream,
-          fontSize: 22,
-          lineHeight: 30,
+          fontSize: 21,
+          lineHeight: 28,
           textAlign: 'center',
           paddingHorizontal: 8,
-          marginBottom: 18,
+          marginBottom: 16,
         }}
       >
         {step.instruction}
@@ -102,7 +134,7 @@ function StepView({
           textTransform: 'uppercase',
           textAlign: 'center',
           paddingHorizontal: 16,
-          marginBottom: 16,
+          marginBottom: 14,
           lineHeight: 14,
         }}
       >
@@ -116,14 +148,14 @@ function StepView({
           fontSize: 14,
           textAlign: 'center',
           paddingHorizontal: 12,
-          marginBottom: 24,
+          marginBottom: 20,
           lineHeight: 21,
         }}
       >
         {step.wisdom}
       </Text>
 
-      <View style={{ alignItems: 'center', marginBottom: 16 }}>
+      <View style={{ alignItems: 'center', marginBottom: 12 }}>
         <Pressable
           onPress={onToggleVoice}
           style={{
@@ -175,10 +207,15 @@ export default function SessionScreen() {
   const voiceId = useRiteStore((s) => s.selectedVoiceId);
 
   const mode = current.mode ?? 'stolen';
+  const checkInState: CheckInState | null = current.currentState;
   const steps = useMemo(() => getStepsForMode(mode), [mode]);
   const stepIndex = Math.min(current.stepIndex, steps.length - 1);
   const isLastStep = stepIndex === steps.length - 1;
   const step = steps[stepIndex];
+  const stateOpener = checkInState ? STATE_OPENERS[checkInState] : null;
+
+  const [showingTransition, setShowingTransition] = useState(false);
+  const [transitionQuote, setTransitionQuote] = useState<string>('');
 
   useEffect(() => {
     if (!current.mode) {
@@ -193,8 +230,14 @@ export default function SessionScreen() {
     if (isLastStep) {
       router.replace('/complete');
     } else {
-      advanceStep();
+      setTransitionQuote(stripAttribution(step.wisdom));
+      setShowingTransition(true);
     }
+  };
+
+  const onTransitionDone = () => {
+    setShowingTransition(false);
+    advanceStep();
   };
 
   if (!current.mode) {
@@ -203,7 +246,19 @@ export default function SessionScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.obsidian }}>
-      <AmbientOrb color={COLORS.gold} size={520} position={{ top: -200, left: -100 }} opacity={0.3} />
+      <AmbientOrb
+        color={COLORS.gold}
+        size={520}
+        position={{ top: -200, left: -100 }}
+        opacity={0.28}
+      />
+      <AmbientOrb
+        color={COLORS.indigoAccent}
+        size={400}
+        position={{ bottom: -160, right: -80 }}
+        opacity={1}
+      />
+
       <View style={{ paddingTop: 56, paddingHorizontal: 28, alignItems: 'center' }}>
         <Text
           style={{
@@ -224,6 +279,7 @@ export default function SessionScreen() {
         index={stepIndex}
         total={steps.length}
         voiceId={voiceId}
+        stateOpener={index0Opener(stepIndex, stateOpener)}
       />
 
       <View style={{ paddingHorizontal: 28, paddingBottom: 32 }}>
@@ -232,6 +288,15 @@ export default function SessionScreen() {
           onPress={onContinue}
         />
       </View>
+
+      {showingTransition ? (
+        <WisdomTransition quote={transitionQuote} onDone={onTransitionDone} />
+      ) : null}
     </View>
   );
+}
+
+function index0Opener(stepIndex: number, opener: { display: string; spoken: string } | null) {
+  if (stepIndex !== 0 || !opener) return null;
+  return opener.display;
 }

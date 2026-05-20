@@ -4,6 +4,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { Brand } from '@/components/Brand';
+import { ChargePicker } from '@/components/ChargePicker';
 import { GoldButton } from '@/components/GoldButton';
 import { ANIMATION, COLORS, TYPOGRAPHY } from '@/constants/design';
 import {
@@ -27,13 +28,14 @@ export default function CheckinScreen() {
 
   const [state, setState] = useState<CheckInState | null>(null);
   const [duration, setDuration] = useState<number | null>(null);
+  const [charge, setCharge] = useState<number | null>(null);
 
   const durations = getDurationsForMode(mode);
   const ready = state !== null && duration !== null;
 
   const onBegin = () => {
     if (!ready) return;
-    startSession(mode, state!, duration!);
+    startSession(mode, state!, duration!, charge);
     router.push('/session');
   };
 
@@ -45,12 +47,12 @@ export default function CheckinScreen() {
       <ScrollView
         contentContainerStyle={{
           padding: 28,
-          paddingTop: 72,
+          paddingTop: 64,
           paddingBottom: 48,
           minHeight: '100%',
         }}
       >
-        <View style={{ alignItems: 'center', marginBottom: 24 }}>
+        <View style={{ alignItems: 'center', marginBottom: 20 }}>
           <Brand />
           <Text
             style={{
@@ -59,7 +61,7 @@ export default function CheckinScreen() {
               fontSize: 10,
               letterSpacing: 3,
               textTransform: 'uppercase',
-              marginTop: 14,
+              marginTop: 12,
             }}
           >
             {MODE_LABELS[mode].title}
@@ -70,9 +72,9 @@ export default function CheckinScreen() {
           style={{
             fontFamily: TYPOGRAPHY.family.serif,
             color: COLORS.cream,
-            fontSize: 26,
+            fontSize: 24,
             textAlign: 'center',
-            marginBottom: 8,
+            marginBottom: 6,
           }}
         >
           How are you arriving?
@@ -83,7 +85,7 @@ export default function CheckinScreen() {
             color: COLORS.creamDim,
             fontSize: 13,
             textAlign: 'center',
-            marginBottom: 20,
+            marginBottom: 18,
           }}
         >
           One word. The protocol adapts.
@@ -94,8 +96,8 @@ export default function CheckinScreen() {
             flexDirection: 'row',
             flexWrap: 'wrap',
             justifyContent: 'center',
-            gap: 10,
-            marginBottom: 36,
+            gap: 8,
+            marginBottom: 28,
           }}
         >
           {STATES.map((s) => {
@@ -105,8 +107,8 @@ export default function CheckinScreen() {
                 key={s}
                 onPress={() => setState(s)}
                 style={{
-                  paddingVertical: 12,
-                  paddingHorizontal: 20,
+                  paddingVertical: 11,
+                  paddingHorizontal: 18,
                   borderRadius: 999,
                   borderWidth: 1,
                   borderColor: selected ? COLORS.gold : COLORS.goldDim,
@@ -117,7 +119,7 @@ export default function CheckinScreen() {
                   style={{
                     fontFamily: TYPOGRAPHY.family.sans,
                     color: selected ? COLORS.cream : COLORS.creamDim,
-                    fontSize: 12,
+                    fontSize: 11,
                     letterSpacing: 2,
                     textTransform: 'uppercase',
                   }}
@@ -133,9 +135,9 @@ export default function CheckinScreen() {
           style={{
             fontFamily: TYPOGRAPHY.family.serif,
             color: COLORS.cream,
-            fontSize: 26,
+            fontSize: 24,
             textAlign: 'center',
-            marginBottom: 8,
+            marginBottom: 6,
           }}
         >
           How much time?
@@ -146,7 +148,7 @@ export default function CheckinScreen() {
             color: COLORS.creamDim,
             fontSize: 13,
             textAlign: 'center',
-            marginBottom: 20,
+            marginBottom: 18,
           }}
         >
           Minutes — choose precisely.
@@ -157,7 +159,7 @@ export default function CheckinScreen() {
             flexDirection: 'row',
             justifyContent: 'center',
             gap: 10,
-            marginBottom: 40,
+            marginBottom: 28,
           }}
         >
           {durations.map((d) => {
@@ -167,9 +169,9 @@ export default function CheckinScreen() {
                 key={d}
                 onPress={() => setDuration(d)}
                 style={{
-                  width: 72,
-                  height: 72,
-                  borderRadius: 36,
+                  width: 68,
+                  height: 68,
+                  borderRadius: 34,
                   borderWidth: 1,
                   borderColor: selected ? COLORS.gold : COLORS.goldDim,
                   backgroundColor: selected ? COLORS.surface : 'transparent',
@@ -181,7 +183,7 @@ export default function CheckinScreen() {
                   style={{
                     fontFamily: TYPOGRAPHY.family.serif,
                     color: selected ? COLORS.gold : COLORS.creamDim,
-                    fontSize: 26,
+                    fontSize: 24,
                   }}
                 >
                   {d}
@@ -202,7 +204,50 @@ export default function CheckinScreen() {
           })}
         </View>
 
+        <Text
+          style={{
+            fontFamily: TYPOGRAPHY.family.serif,
+            color: COLORS.cream,
+            fontSize: 24,
+            textAlign: 'center',
+            marginBottom: 6,
+          }}
+        >
+          Charge level — now.
+        </Text>
+        <Text
+          style={{
+            fontFamily: TYPOGRAPHY.family.sansLight,
+            color: COLORS.creamDim,
+            fontSize: 13,
+            textAlign: 'center',
+            marginBottom: 16,
+          }}
+        >
+          Honest read. We will measure the delta after.
+        </Text>
+
+        <View style={{ marginBottom: 36 }}>
+          <ChargePicker value={charge} onChange={setCharge} />
+        </View>
+
         <GoldButton label="Begin Rite" disabled={!ready} onPress={onBegin} />
+
+        {charge == null ? (
+          <Text
+            style={{
+              fontFamily: TYPOGRAPHY.family.sans,
+              color: COLORS.goldDim,
+              fontSize: 9,
+              letterSpacing: 1.5,
+              textTransform: 'uppercase',
+              textAlign: 'center',
+              marginTop: 12,
+            }}
+          >
+            Charge optional — skip to begin
+          </Text>
+        ) : null}
       </ScrollView>
     </Animated.View>
   );
