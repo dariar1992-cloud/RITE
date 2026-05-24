@@ -25,7 +25,8 @@ export const PHASES: Record<CyclePhase, PhaseInfo> = {
     label: 'Menstrual',
     short: 'Menstrual phase',
     accent: '#B85C5C',
-    description: 'Energy is low. The body is shedding. Recovery dominant.',
+    description:
+      'Many experience lower energy and higher recovery need. Track your own response.',
     recommendedMode: 'winddown',
     opener: 'Your body is shedding. We will move slowly. We will not push.',
   },
@@ -34,7 +35,8 @@ export const PHASES: Record<CyclePhase, PhaseInfo> = {
     label: 'Follicular',
     short: 'Follicular phase',
     accent: '#C9A53C',
-    description: 'Estrogen rising. Strength returning. Best for sharpening focus.',
+    description:
+      'Rising estradiol is linked to working-memory and verbal-fluency gains. Often a good window for sharpening.',
     recommendedMode: 'stolen',
     opener: 'Estrogen is rising. Strength is returning. We will channel it.',
   },
@@ -43,7 +45,8 @@ export const PHASES: Record<CyclePhase, PhaseInfo> = {
     label: 'Ovulatory',
     short: 'Ovulatory phase',
     accent: '#E8C870',
-    description: 'Peak energy. Communication strong. Short bursts work best.',
+    description:
+      'Peak estrogen for a brief window. Some report high output; evidence is mixed and individual.',
     recommendedMode: 'stolen',
     opener: 'You are at peak. We will sharpen, not strain.',
   },
@@ -52,7 +55,8 @@ export const PHASES: Record<CyclePhase, PhaseInfo> = {
     label: 'Luteal',
     short: 'Luteal phase',
     accent: '#9A86C2',
-    description: 'Energy descending. The world feels heavier. Honor it.',
+    description:
+      'Higher progesterone and perceived effort for many. Premenstrual fatigue is common.',
     recommendedMode: 'winddown',
     opener: 'The world feels heavier this week. We will honor that.',
   },

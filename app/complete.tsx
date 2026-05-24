@@ -6,12 +6,30 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { AmbientOrb } from '@/components/AmbientOrb';
 import { Brand } from '@/components/Brand';
 import { ChargePicker } from '@/components/ChargePicker';
+import { CitationSheet } from '@/components/CitationSheet';
 import { GoldButton } from '@/components/GoldButton';
+import { WhyThisWorked } from '@/components/WhyThisWorked';
 import { ANIMATION, COLORS, TYPOGRAPHY } from '@/constants/design';
+import { computeCycleState } from '@/data/cycle';
 import { getStepsForMode } from '@/data/sessions';
+import {
+  PHASE_CITATIONS,
+  STEP_CITATIONS,
+  getEvidence,
+  type Evidence,
+} from '@/data/science';
+import { haptics } from '@/hooks/useHaptics';
 import { useRiteStore } from '@/store/useRiteStore';
 
-function Metric({ label, value, tone = 'neutral' }: { label: string; value: string; tone?: 'positive' | 'neutral' | 'negative' }) {
+function Metric({
+  label,
+  value,
+  tone = 'neutral',
+}: {
+  label: string;
+  value: string;
+  tone?: 'positive' | 'neutral' | 'negative';
+}) {
   const valueColor =
     tone === 'positive' ? '#7AD27A' : tone === 'negative' ? '#c97a7a' : COLORS.gold;
   return (
@@ -60,19 +78,23 @@ export default function CompleteScreen() {
   const streak = useRiteStore((s) => s.streakCount);
   const totalSessions = useRiteStore((s) => s.totalSessions);
   const mode = useRiteStore((s) => s.current.mode);
+  const state = useRiteStore((s) => s.current.currentState);
+  const duration = useRiteStore((s) => s.current.durationMinutes);
   const chargeBefore = useRiteStore((s) => s.current.chargeBefore);
+  const cycle = useRiteStore((s) => s.cycle);
   const sessionCompletedRef = useRef(false);
 
   const [chargeAfter, setLocalChargeAfter] = useState<number | null>(null);
   const [recorded, setRecorded] = useState(false);
+  const [openEvidence, setOpenEvidence] = useState<Evidence | null>(null);
 
-  // Complete on mount only if chargeBefore was not set (skip-the-question path)
   useEffect(() => {
     if (sessionCompletedRef.current) return;
     if (chargeBefore == null) {
       sessionCompletedRef.current = true;
       completeSession();
       setRecorded(true);
+      haptics.success();
     }
   }, [chargeBefore, completeSession]);
 
@@ -86,10 +108,10 @@ export default function CompleteScreen() {
     if (sessionCompletedRef.current || chargeAfter == null) return;
     setChargeAfter(chargeAfter);
     sessionCompletedRef.current = true;
-    // Defer to allow state update before completeSession reads it
     setTimeout(() => {
       completeSession();
       setRecorded(true);
+      haptics.success();
     }, 0);
   };
 
@@ -99,13 +121,36 @@ export default function CompleteScreen() {
     return steps[steps.length - 1].wisdom;
   }, [mode]);
 
-  const delta = chargeBefore != null && chargeAfter != null ? chargeAfter - chargeBefore : null;
+  const cyclePhase = useMemo(() => {
+    if (!cycle.enabled || !cycle.lastPeriodStart) return null;
+    const cs = computeCycleState({
+      lastPeriodStart: cycle.lastPeriodStart,
+      cycleLengthDays: cycle.cycleLengthDays,
+      periodLengthDays: cycle.periodLengthDays,
+    });
+    return cs?.phase ?? null;
+  }, [cycle]);
+
+  const citations = useMemo<Evidence[]>(() => {
+    if (!mode) return [];
+    const ids = new Set<string>();
+    const layers: Array<'body' | 'energy' | 'mind' | 'soul'> = ['body', 'energy', 'mind', 'soul'];
+    layers.forEach((layer) => {
+      (STEP_CITATIONS[`${mode}-${layer}`] ?? []).forEach((id) => ids.add(id));
+    });
+    if (cyclePhase) {
+      (PHASE_CITATIONS[cyclePhase] ?? []).forEach((id) => ids.add(id));
+    }
+    return Array.from(ids)
+      .map((id) => getEvidence(id))
+      .filter((x): x is Evidence => Boolean(x))
+      .slice(0, 4);
+  }, [mode, cyclePhase]);
+
+  const delta =
+    chargeBefore != null && chargeAfter != null ? chargeAfter - chargeBefore : null;
   const deltaText =
-    delta == null
-      ? '—'
-      : delta > 0
-        ? `+${delta}`
-        : `${delta}`;
+    delta == null ? '—' : delta > 0 ? `+${delta}` : `${delta}`;
   const deltaTone: 'positive' | 'neutral' | 'negative' =
     delta == null ? 'neutral' : delta > 0 ? 'positive' : delta < 0 ? 'negative' : 'neutral';
 
@@ -125,7 +170,7 @@ export default function CompleteScreen() {
         <Brand />
       </View>
 
-      <View style={{ flex: 1, justifyContent: 'center', gap: 22 }}>
+      <View style={{ flex: 1, justifyContent: 'center', gap: 20 }}>
         <View style={{ alignItems: 'center', gap: 6 }}>
           <Text
             style={{
@@ -181,7 +226,13 @@ export default function CompleteScreen() {
             >
               You started at {chargeBefore} / 10.
             </Text>
-            <ChargePicker value={chargeAfter} onChange={setLocalChargeAfter} />
+            <ChargePicker
+              value={chargeAfter}
+              onChange={(n) => {
+                haptics.select();
+                setLocalChargeAfter(n);
+              }}
+            />
             <GoldButton
               label="Lock delta"
               disabled={chargeAfter == null}
@@ -191,15 +242,26 @@ export default function CompleteScreen() {
           </View>
         ) : (
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            <Metric label="HRV est." value="+12%" tone="positive" />
-            <Metric
-              label="Charge Δ"
-              value={deltaText}
-              tone={deltaTone}
-            />
+            <Metric label="Charge Δ" value={deltaText} tone={deltaTone} />
             <Metric label="Streak" value={String(streak)} />
+            <Metric label="Lifetime" value={String(totalSessions)} />
           </View>
         )}
+
+        {mode && duration != null ? (
+          <WhyThisWorked
+            mode={mode}
+            durationMinutes={duration}
+            state={state}
+            phase={cyclePhase}
+            charge={chargeBefore}
+            citations={citations}
+            onOpenCitation={(e) => {
+              haptics.select();
+              setOpenEvidence(e);
+            }}
+          />
+        ) : null}
 
         {wisdom ? (
           <Text
@@ -215,19 +277,6 @@ export default function CompleteScreen() {
             {wisdom}
           </Text>
         ) : null}
-
-        <Text
-          style={{
-            fontFamily: TYPOGRAPHY.family.sans,
-            color: COLORS.goldDim,
-            fontSize: 10,
-            letterSpacing: 2,
-            textTransform: 'uppercase',
-            textAlign: 'center',
-          }}
-        >
-          {totalSessions} {totalSessions === 1 ? 'rite' : 'rites'} completed
-        </Text>
       </View>
 
       <View style={{ paddingBottom: 32 }}>
@@ -236,6 +285,8 @@ export default function CompleteScreen() {
           onPress={() => router.replace('/')}
         />
       </View>
+
+      <CitationSheet evidence={openEvidence} onClose={() => setOpenEvidence(null)} />
     </Animated.View>
   );
 }

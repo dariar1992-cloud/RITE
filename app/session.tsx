@@ -1,12 +1,13 @@
-import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { AmbientOrb } from '@/components/AmbientOrb';
 import { BreathingRing } from '@/components/BreathingRing';
+import { CitationSheet } from '@/components/CitationSheet';
 import { GoldButton } from '@/components/GoldButton';
+import { SettlingBeat } from '@/components/SettlingBeat';
 import { Waveform } from '@/components/Waveform';
 import { WisdomTransition } from '@/components/WisdomTransition';
 import { ANIMATION, COLORS, TYPOGRAPHY } from '@/constants/design';
@@ -19,12 +20,22 @@ import {
   type CheckInState,
   type Step,
 } from '@/data/sessions';
+import {
+  STEP_CITATIONS,
+  getEvidence,
+  type Evidence,
+} from '@/data/science';
 import { useVoice } from '@/hooks/useVoice';
+import { haptics } from '@/hooks/useHaptics';
 import { useRiteStore } from '@/store/useRiteStore';
 
 function stripAttribution(wisdom: string): string {
   const idx = wisdom.indexOf(' — ');
   return idx === -1 ? wisdom : wisdom.slice(0, idx);
+}
+
+function citationKey(mode: 'stolen' | 'winddown', layer: Step['layer']): string {
+  return `${mode}-${layer.toLowerCase()}`;
 }
 
 function StepView({
@@ -33,12 +44,16 @@ function StepView({
   total,
   voiceId,
   stateOpener,
+  primaryEvidence,
+  onOpenEvidence,
 }: {
   step: Step;
   index: number;
   total: number;
   voiceId: string | null;
   stateOpener: string | null;
+  primaryEvidence: Evidence | null;
+  onOpenEvidence: (e: Evidence) => void;
 }) {
   const { play, stop, isPlaying, isLoading, error } = useVoice();
   const triggeredRef = useRef(false);
@@ -63,6 +78,7 @@ function StepView({
   }, [stop]);
 
   const onToggleVoice = () => {
+    haptics.select();
     if (isPlaying) {
       stop();
     } else if (voiceId) {
@@ -126,21 +142,44 @@ function StepView({
         {step.instruction}
       </Text>
 
-      <Text
-        style={{
-          fontFamily: TYPOGRAPHY.family.sans,
-          color: COLORS.goldDim,
-          fontSize: 9,
-          letterSpacing: 1.6,
-          textTransform: 'uppercase',
-          textAlign: 'center',
-          paddingHorizontal: 16,
-          marginBottom: 14,
-          lineHeight: 14,
-        }}
+      <Pressable
+        onPress={() => primaryEvidence && onOpenEvidence(primaryEvidence)}
+        disabled={!primaryEvidence}
       >
-        {step.science}
-      </Text>
+        <Text
+          style={{
+            fontFamily: TYPOGRAPHY.family.sans,
+            color: COLORS.goldDim,
+            fontSize: 9,
+            letterSpacing: 1.6,
+            textTransform: 'uppercase',
+            textAlign: 'center',
+            paddingHorizontal: 16,
+            marginBottom: 4,
+            lineHeight: 14,
+          }}
+        >
+          {step.science}
+        </Text>
+        {primaryEvidence ? (
+          <Text
+            style={{
+              fontFamily: TYPOGRAPHY.family.sans,
+              color: COLORS.gold,
+              fontSize: 8,
+              letterSpacing: 1.5,
+              textTransform: 'uppercase',
+              textAlign: 'center',
+              marginBottom: 14,
+              opacity: 0.8,
+            }}
+          >
+            Tap for source ↗
+          </Text>
+        ) : (
+          <View style={{ marginBottom: 14 }} />
+        )}
+      </Pressable>
 
       <Text
         style={{
@@ -234,8 +273,21 @@ export default function SessionScreen() {
     return parts.length ? parts.join(' ') : null;
   }, [stateOpener, phaseOpener]);
 
+  const primaryEvidence = useMemo<Evidence | null>(() => {
+    const ids = STEP_CITATIONS[citationKey(mode, step.layer)] ?? [];
+    const first = ids[0];
+    return first ? (getEvidence(first) ?? null) : null;
+  }, [mode, step.layer]);
+
+  const [openEvidence, setOpenEvidence] = useState<Evidence | null>(null);
   const [showingTransition, setShowingTransition] = useState(false);
   const [transitionQuote, setTransitionQuote] = useState<string>('');
+  const [settling, setSettling] = useState(true);
+
+  // Reset settling on each new step
+  useEffect(() => {
+    setSettling(true);
+  }, [stepIndex, mode]);
 
   useEffect(() => {
     if (!current.mode) {
@@ -244,9 +296,7 @@ export default function SessionScreen() {
   }, [current.mode, router]);
 
   const onContinue = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
+    haptics.light();
     if (isLastStep) {
       router.replace('/complete');
     } else {
@@ -298,8 +348,13 @@ export default function SessionScreen() {
         step={step}
         index={stepIndex}
         total={steps.length}
-        voiceId={voiceId}
+        voiceId={settling ? null : voiceId}
         stateOpener={stepIndex === 0 ? combinedOpener : null}
+        primaryEvidence={primaryEvidence}
+        onOpenEvidence={(e) => {
+          haptics.select();
+          setOpenEvidence(e);
+        }}
       />
 
       <View style={{ paddingHorizontal: 28, paddingBottom: 32 }}>
@@ -312,7 +367,16 @@ export default function SessionScreen() {
       {showingTransition ? (
         <WisdomTransition quote={transitionQuote} onDone={onTransitionDone} />
       ) : null}
+
+      {settling && stepIndex === 0 ? (
+        <SettlingBeat
+          symbol={step.symbol}
+          layerLabel={step.layer}
+          onDone={() => setSettling(false)}
+        />
+      ) : null}
+
+      <CitationSheet evidence={openEvidence} onClose={() => setOpenEvidence(null)} />
     </View>
   );
 }
-

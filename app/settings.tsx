@@ -179,6 +179,18 @@ export default function SettingsScreen() {
         <Row label="Lifetime rites" value={String(totalSessions)} />
         <Row label="History" value="View" onPress={() => router.push('/history')} />
 
+        <SectionHeader label="The Science" />
+        <Row
+          label="Methodology"
+          value="Read"
+          onPress={() => router.push('/methodology')}
+        />
+        <Row
+          label="Evidence library"
+          value="Browse"
+          onPress={() => router.push('/science')}
+        />
+
         <SectionHeader label="Sync" />
         <Row label="Sync across devices" value="Coming soon" disabled />
         <Text

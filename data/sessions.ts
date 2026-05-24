@@ -73,7 +73,7 @@ export const WIND_DOWN_STEPS: readonly Step[] = Object.freeze([
     instruction:
       'Scan from crown to feet. Where is energy still held? Breathe into it.',
     science:
-      'Body scan reduces cortisol up to 25% · Shakti redistribution · somatic release',
+      'Focused-attention meditation lowers circulating cortisol · Shakti redistribution · somatic release',
     wisdom:
       'Prana must be returned to stillness each night. — Tantric texts',
   },
@@ -83,7 +83,7 @@ export const WIND_DOWN_STEPS: readonly Step[] = Object.freeze([
     instruction:
       'Name three things you accomplished today. They need not be large.',
     science:
-      'Positive consolidation activates reward circuits · anchors neuroplasticity · Niyama',
+      'Specific intention setting primes executive function · anchors neuroplasticity · Niyama',
     wisdom:
       'The steady-minded one neither rejoices nor grieves. — Bhagavad Gita 2.56',
   },
@@ -93,7 +93,7 @@ export const WIND_DOWN_STEPS: readonly Step[] = Object.freeze([
     instruction:
       'Release tomorrow. It does not exist yet. You have done enough today.',
     science:
-      'Temporal decoupling reduces anticipatory cortisol · Sthitaprajna state',
+      'Deferring future-focused worry reduces daily worry frequency · Sthitaprajna state',
     wisdom: 'Complete each day and be done with it. — Karma Yoga',
   },
 ] as const);

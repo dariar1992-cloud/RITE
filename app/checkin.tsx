@@ -14,6 +14,7 @@ import {
   type CheckInState,
   type Mode,
 } from '@/data/sessions';
+import { haptics } from '@/hooks/useHaptics';
 import { useRiteStore } from '@/store/useRiteStore';
 
 function asMode(value: unknown): Mode {
@@ -105,7 +106,10 @@ export default function CheckinScreen() {
             return (
               <Pressable
                 key={s}
-                onPress={() => setState(s)}
+                onPress={() => {
+                  haptics.select();
+                  setState(s);
+                }}
                 style={{
                   paddingVertical: 11,
                   paddingHorizontal: 18,
@@ -167,7 +171,10 @@ export default function CheckinScreen() {
             return (
               <Pressable
                 key={d}
-                onPress={() => setDuration(d)}
+                onPress={() => {
+                  haptics.select();
+                  setDuration(d);
+                }}
                 style={{
                   width: 68,
                   height: 68,
@@ -228,7 +235,13 @@ export default function CheckinScreen() {
         </Text>
 
         <View style={{ marginBottom: 36 }}>
-          <ChargePicker value={charge} onChange={setCharge} />
+          <ChargePicker
+            value={charge}
+            onChange={(n) => {
+              haptics.select();
+              setCharge(n);
+            }}
+          />
         </View>
 
         <GoldButton label="Begin Rite" disabled={!ready} onPress={onBegin} />

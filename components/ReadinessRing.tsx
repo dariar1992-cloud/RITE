@@ -1,6 +1,7 @@
 import { Text, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
+import { CountUp } from '@/components/CountUp';
 import { COLORS, TYPOGRAPHY } from '@/constants/design';
 
 interface Props {
@@ -8,6 +9,7 @@ interface Props {
   label: string;
   size?: number;
   accentColor?: string;
+  animate?: boolean;
 }
 
 export function ReadinessRing({
@@ -15,6 +17,7 @@ export function ReadinessRing({
   label,
   size = 180,
   accentColor = COLORS.gold,
+  animate = true,
 }: Props) {
   const stroke = 3;
   const radius = (size - stroke) / 2;
@@ -68,16 +71,29 @@ export function ReadinessRing({
       >
         Readiness
       </Text>
-      <Text
-        style={{
-          fontFamily: TYPOGRAPHY.family.serif,
-          color: COLORS.cream,
-          fontSize: size * 0.32,
-          lineHeight: size * 0.34,
-        }}
-      >
-        {score}
-      </Text>
+      {animate ? (
+        <CountUp
+          target={score}
+          durationMs={900}
+          style={{
+            fontFamily: TYPOGRAPHY.family.serif,
+            color: COLORS.cream,
+            fontSize: size * 0.32,
+            lineHeight: size * 0.34,
+          }}
+        />
+      ) : (
+        <Text
+          style={{
+            fontFamily: TYPOGRAPHY.family.serif,
+            color: COLORS.cream,
+            fontSize: size * 0.32,
+            lineHeight: size * 0.34,
+          }}
+        >
+          {score}
+        </Text>
+      )}
       <Text
         style={{
           fontFamily: TYPOGRAPHY.family.serifItalic,
