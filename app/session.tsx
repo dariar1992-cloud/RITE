@@ -282,11 +282,10 @@ export default function SessionScreen() {
   const [openEvidence, setOpenEvidence] = useState<Evidence | null>(null);
   const [showingTransition, setShowingTransition] = useState(false);
   const [transitionQuote, setTransitionQuote] = useState<string>('');
+  // Settling beat only runs on step 0; subsequent steps go straight to voice.
   const [settling, setSettling] = useState(true);
-
-  // Reset settling on each new step
   useEffect(() => {
-    setSettling(true);
+    setSettling(stepIndex === 0);
   }, [stepIndex, mode]);
 
   useEffect(() => {

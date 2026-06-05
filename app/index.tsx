@@ -156,20 +156,32 @@ export default function HomeScreen() {
                     flexDirection: 'row',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    marginBottom: 8,
+                    marginBottom: 10,
                   }}
                 >
-                  <Text
-                    style={{
-                      fontFamily: TYPOGRAPHY.family.sans,
-                      color: recommended ? accent : COLORS.gold,
-                      fontSize: 10,
-                      letterSpacing: 3,
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    {mode === 'stolen' ? '⚡  Stolen Moment' : '🌑  Wind Down'}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <Text
+                      style={{
+                        fontFamily: TYPOGRAPHY.family.serif,
+                        color: recommended ? accent : COLORS.gold,
+                        fontSize: 18,
+                        lineHeight: 18,
+                      }}
+                    >
+                      {mode === 'stolen' ? '◯' : '◐'}
+                    </Text>
+                    <Text
+                      style={{
+                        fontFamily: TYPOGRAPHY.family.sans,
+                        color: recommended ? accent : COLORS.gold,
+                        fontSize: 10,
+                        letterSpacing: 3,
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {mode === 'stolen' ? 'Stolen Moment' : 'Wind Down'}
+                    </Text>
+                  </View>
                   {recommended ? (
                     <Text
                       style={{

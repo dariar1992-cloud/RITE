@@ -96,8 +96,8 @@ export default function CheckinScreen() {
           style={{
             flexDirection: 'row',
             flexWrap: 'wrap',
-            justifyContent: 'center',
-            gap: 8,
+            justifyContent: 'space-between',
+            rowGap: 10,
             marginBottom: 28,
           }}
         >
@@ -111,12 +111,13 @@ export default function CheckinScreen() {
                   setState(s);
                 }}
                 style={{
-                  paddingVertical: 11,
-                  paddingHorizontal: 18,
-                  borderRadius: 999,
+                  width: '48%',
+                  paddingVertical: 14,
+                  borderRadius: 12,
                   borderWidth: 1,
                   borderColor: selected ? COLORS.gold : COLORS.goldDim,
                   backgroundColor: selected ? COLORS.surface : 'transparent',
+                  alignItems: 'center',
                 }}
               >
                 <Text

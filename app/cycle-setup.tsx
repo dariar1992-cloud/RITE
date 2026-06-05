@@ -18,7 +18,17 @@ import {
 } from '@/data/cycle';
 import { useRiteStore } from '@/store/useRiteStore';
 
-const DAYS_AGO_OPTIONS = [0, 1, 2, 3, 4, 5, 7, 10, 14, 21, 28];
+const DAYS_AGO_RECENT = [0, 1, 2, 3, 4, 5, 6, 7];
+const DAYS_AGO_WEEKS = [10, 14, 17, 21, 24, 28, 35, 42];
+
+function labelForDaysAgo(n: number): string {
+  if (n === 0) return 'Today';
+  if (n === 1) return 'Yesterday';
+  if (n < 7) return `${n}d ago`;
+  if (n === 7) return '1 week';
+  if (n % 7 === 0) return `${n / 7} weeks`;
+  return `${n}d ago`;
+}
 
 function NumberStepper({
   label,
@@ -228,25 +238,35 @@ export default function CycleSetupScreen() {
           Approximate is fine. You can refine later.
         </Text>
 
+        <Text
+          style={{
+            fontFamily: TYPOGRAPHY.family.sans,
+            color: COLORS.goldDim,
+            fontSize: 9,
+            letterSpacing: 2.5,
+            textTransform: 'uppercase',
+            marginBottom: 8,
+          }}
+        >
+          Recent
+        </Text>
         <View
           style={{
             flexDirection: 'row',
             flexWrap: 'wrap',
-            justifyContent: 'center',
             gap: 8,
-            marginBottom: 32,
+            marginBottom: 18,
           }}
         >
-          {DAYS_AGO_OPTIONS.map((n) => {
+          {DAYS_AGO_RECENT.map((n) => {
             const selected = daysAgo === n;
-            const label = n === 0 ? 'Today' : n === 1 ? 'Yesterday' : `${n} days ago`;
             return (
               <Pressable
                 key={n}
                 onPress={() => setDaysAgo(n)}
                 style={{
                   paddingVertical: 9,
-                  paddingHorizontal: 14,
+                  paddingHorizontal: 13,
                   borderRadius: 999,
                   borderWidth: 1,
                   borderColor: selected ? COLORS.gold : COLORS.goldDim,
@@ -262,14 +282,85 @@ export default function CycleSetupScreen() {
                     textTransform: 'uppercase',
                   }}
                 >
-                  {label}
+                  {labelForDaysAgo(n)}
                 </Text>
               </Pressable>
             );
           })}
         </View>
 
-        <View style={{ gap: 14, marginBottom: 32 }}>
+        <Text
+          style={{
+            fontFamily: TYPOGRAPHY.family.sans,
+            color: COLORS.goldDim,
+            fontSize: 9,
+            letterSpacing: 2.5,
+            textTransform: 'uppercase',
+            marginBottom: 8,
+          }}
+        >
+          Further back
+        </Text>
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: 8,
+            marginBottom: 24,
+          }}
+        >
+          {DAYS_AGO_WEEKS.map((n) => {
+            const selected = daysAgo === n;
+            return (
+              <Pressable
+                key={n}
+                onPress={() => setDaysAgo(n)}
+                style={{
+                  paddingVertical: 9,
+                  paddingHorizontal: 13,
+                  borderRadius: 999,
+                  borderWidth: 1,
+                  borderColor: selected ? COLORS.gold : COLORS.goldDim,
+                  backgroundColor: selected ? COLORS.surface : 'transparent',
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: TYPOGRAPHY.family.sans,
+                    color: selected ? COLORS.cream : COLORS.creamDim,
+                    fontSize: 11,
+                    letterSpacing: 1.5,
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {labelForDaysAgo(n)}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {startDate ? (
+          <Text
+            style={{
+              fontFamily: TYPOGRAPHY.family.serifItalic,
+              color: COLORS.gold,
+              fontSize: 13,
+              textAlign: 'center',
+              marginBottom: 28,
+            }}
+          >
+            Started {new Date(startDate).toLocaleDateString([], {
+              weekday: 'long',
+              month: 'short',
+              day: 'numeric',
+            })}
+          </Text>
+        ) : (
+          <View style={{ marginBottom: 28 }} />
+        )}
+
+        <View style={{ gap: 14, marginBottom: 28 }}>
           <NumberStepper
             label="Average cycle length"
             value={cycleLen}
@@ -285,6 +376,20 @@ export default function CycleSetupScreen() {
             onChange={setPeriodLen}
           />
         </View>
+
+        <Text
+          style={{
+            fontFamily: TYPOGRAPHY.family.sansLight,
+            color: COLORS.goldDim,
+            fontSize: 11,
+            lineHeight: 17,
+            textAlign: 'center',
+            marginBottom: 18,
+            opacity: 0.75,
+          }}
+        >
+          You can refine these as you log more periods.
+        </Text>
 
         <GoldButton label="Lock in cycle protocol" disabled={daysAgo == null} onPress={onSave} />
 

@@ -4,7 +4,9 @@ import { COLORS, TYPOGRAPHY } from '@/constants/design';
 import {
   PHASES,
   formatLocalDate,
+  isFertileDay,
   phaseForCycleDay,
+  projectCycleDay,
   type CyclePhase,
 } from '@/data/cycle';
 
@@ -38,6 +40,7 @@ interface CellInfo {
   isToday: boolean;
   isLoggedPeriodStart: boolean;
   isPredictedPeriod: boolean;
+  isFertile: boolean;
   inThisMonth: boolean;
 }
 
@@ -68,15 +71,11 @@ export function CalendarGrid({
     date.setDate(gridStart.getDate() + i);
     const yyyyMmDd = formatLocalDate(date);
 
-    // Project forward from lastPeriodDate
+    // Project forward AND backward from lastPeriodDate
     const daysFromLast = diffDaysFromAnchor(lastPeriodDate, date);
-    let cycleDay: number | null = null;
-    let phase: CyclePhase | null = null;
-    if (daysFromLast >= 0) {
-      const cd = (daysFromLast % cycleLengthDays) + 1;
-      cycleDay = cd;
-      phase = phaseForCycleDay(cd, cycleLengthDays, periodLengthDays);
-    }
+    const cycleDay = projectCycleDay(daysFromLast, cycleLengthDays);
+    const phase =
+      cycleDay != null ? phaseForCycleDay(cycleDay, cycleLengthDays, periodLengthDays) : null;
 
     cells.push({
       date,
@@ -87,6 +86,8 @@ export function CalendarGrid({
       isLoggedPeriodStart: periodLog.includes(yyyyMmDd),
       isPredictedPeriod:
         phase === 'menstrual' && !periodLog.includes(yyyyMmDd) && daysFromLast > 0,
+      isFertile:
+        cycleDay != null && isFertileDay(cycleDay, cycleLengthDays) && !periodLog.includes(yyyyMmDd),
       inThisMonth: date.getMonth() === monthStart.getMonth(),
     });
   }
@@ -154,13 +155,15 @@ export function CalendarGrid({
                   width: '100%',
                   height: '100%',
                   borderRadius: 8,
-                  borderWidth: isSelected ? 1 : c.isToday ? 1 : 0,
+                  borderWidth: isSelected || c.isToday ? 1 : 0,
                   borderColor: isSelected ? COLORS.gold : c.isToday ? COLORS.cream : 'transparent',
                   backgroundColor: c.isLoggedPeriodStart
                     ? PHASES.menstrual.accent
                     : c.isPredictedPeriod
                       ? 'rgba(184,92,92,0.2)'
-                      : 'transparent',
+                      : c.isFertile
+                        ? 'rgba(201,165,60,0.12)'
+                        : 'transparent',
                   alignItems: 'center',
                   justifyContent: 'center',
                   opacity: dim ? 0.25 : 1,

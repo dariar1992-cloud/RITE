@@ -14,7 +14,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import { setAudioModeAsync } from 'expo-audio';
 import { useEffect } from 'react';
-import { Platform, View } from 'react-native';
+import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { COLORS } from '@/constants/design';
@@ -48,18 +48,18 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, hydrated]);
 
+  // Onboarding gate — runs only after the Stack has mounted. Guard with a
+  // short delay to ensure the navigator is fully ready before .replace().
   useEffect(() => {
     if (!fontsLoaded || !hydrated) return;
     const top = segments[0];
     if (!onboarded && top !== 'onboarding') {
-      router.replace('/onboarding');
+      const id = setTimeout(() => router.replace('/onboarding'), 0);
+      return () => clearTimeout(id);
     }
   }, [fontsLoaded, hydrated, onboarded, segments, router]);
 
-  if (!fontsLoaded || !hydrated) {
-    return <View style={{ flex: 1, backgroundColor: COLORS.obsidian }} />;
-  }
-
+  // Always mount the Stack; expo-splash-screen covers it until ready.
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: COLORS.obsidian }}>
       <Stack

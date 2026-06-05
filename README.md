@@ -9,9 +9,16 @@ Built with Expo Router (iOS, Android, Web from a single codebase), NativeWind v4
 ## Quick start
 
 ```bash
+./run.sh             # installs deps if needed, boots http://localhost:8081
+./run.sh test        # boots the server and runs the Playwright E2E suite
+```
+
+Or the long form:
+
+```bash
 npm install
 cp .env.local.example .env.local   # then fill in your ELEVENLABS_API_KEY
-npm run web      # http://localhost:8081
+npm run web          # http://localhost:8081
 npm run ios
 npm run android
 ```
@@ -19,6 +26,17 @@ npm run android
 The ElevenLabs API key is read server-side by `app/api/voice+api.ts`. Never expose it via `EXPO_PUBLIC_*` or hardcode it in client code.
 
 For native production builds, set `EXPO_PUBLIC_API_BASE_URL` to the deployed origin that hosts the `/api/voice` route.
+
+## End-to-end tests
+
+Playwright suite under `e2e/`. Covers onboarding, the full Stolen Moment and Wind Down session flows, cycle opt-in, settings navigation, and that `/api/voice` actually fires during a session. Voice is mocked by default; pass `RITE_REAL_VOICE=1` to hit ElevenLabs for real. See `e2e/README.md` for detail.
+
+```bash
+npm run test:e2e:install   # one-time: download the Chromium binary
+npm run test:e2e           # all tests, headless
+npm run test:e2e:ui        # headed time-travel UI
+npm run test:e2e:voice     # hits the real ElevenLabs route once
+```
 
 ## What works in this scaffold
 

@@ -145,6 +145,34 @@ export function phaseForCycleDay(
   return 'luteal';
 }
 
+// Fertile window: typically days 11–17 in a 28-day cycle (5 days before
+// + day of + 1 day after ovulation, ovulation ≈ cycleLen − 14).
+export function isFertileDay(cycleDay: number, cycleLengthDays: number): boolean {
+  const ovulation = cycleLengthDays - 14;
+  return cycleDay >= ovulation - 5 && cycleDay <= ovulation + 1;
+}
+
+// PMS window: typically the last 5 days before period.
+export function isPmsDay(cycleDay: number, cycleLengthDays: number): boolean {
+  return cycleDay > cycleLengthDays - 5 && cycleDay <= cycleLengthDays;
+}
+
+// Project a cycle day for any date, including dates BEFORE the anchor period.
+// Returns null for dates more than one cycle before the anchor.
+export function projectCycleDay(
+  daysFromAnchor: number,
+  cycleLengthDays: number
+): number | null {
+  if (daysFromAnchor >= 0) {
+    return (daysFromAnchor % cycleLengthDays) + 1;
+  }
+  // For dates before the anchor: reverse-project assuming consistent length.
+  // Only project back up to 3 cycles (≈3 months) to avoid showing made-up data.
+  if (daysFromAnchor < -cycleLengthDays * 3) return null;
+  const rem = ((daysFromAnchor % cycleLengthDays) + cycleLengthDays) % cycleLengthDays;
+  return rem + 1;
+}
+
 export const DEFAULT_CYCLE_LENGTH = 28;
 export const DEFAULT_PERIOD_LENGTH = 5;
 export const MIN_CYCLE_LENGTH = 21;
