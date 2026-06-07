@@ -249,7 +249,18 @@ export default function SessionScreen() {
 
   const mode = current.mode ?? 'stolen';
   const checkInState: CheckInState | null = current.currentState;
-  const steps = useMemo(() => getStepsForMode(mode), [mode]);
+  const baseSteps = useMemo(() => getStepsForMode(mode), [mode]);
+  // If user picked a lead layer in Check-in, move that step to position 0.
+  // The remaining steps keep their natural order so the protocol stays coherent.
+  const steps = useMemo(() => {
+    if (!current.leadLayer) return baseSteps;
+    const leadIdx = baseSteps.findIndex((s) => s.layer === current.leadLayer);
+    if (leadIdx <= 0) return baseSteps;
+    const reordered = [...baseSteps];
+    const [lead] = reordered.splice(leadIdx, 1);
+    reordered.unshift(lead);
+    return reordered;
+  }, [baseSteps, current.leadLayer]);
   const stepIndex = Math.min(current.stepIndex, steps.length - 1);
   const isLastStep = stepIndex === steps.length - 1;
   const step = steps[stepIndex];

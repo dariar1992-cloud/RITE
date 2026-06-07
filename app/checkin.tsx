@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
@@ -7,11 +7,13 @@ import { Brand } from '@/components/Brand';
 import { ChargePicker } from '@/components/ChargePicker';
 import { GoldButton } from '@/components/GoldButton';
 import { ANIMATION, COLORS, TYPOGRAPHY } from '@/constants/design';
+import { getPreset } from '@/data/presets';
 import {
   MODE_LABELS,
   STATES,
   getDurationsForMode,
   type CheckInState,
+  type Layer,
   type Mode,
 } from '@/data/sessions';
 import { haptics } from '@/hooks/useHaptics';
@@ -21,22 +23,44 @@ function asMode(value: unknown): Mode {
   return value === 'winddown' ? 'winddown' : 'stolen';
 }
 
+const LAYERS: readonly Layer[] = ['Body', 'Energy', 'Mind', 'Soul'] as const;
+
 export default function CheckinScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ mode?: string }>();
-  const mode = asMode(params.mode);
+  const params = useLocalSearchParams<{ mode?: string; preset?: string }>();
+  const preset = getPreset(params.preset);
+  const mode = asMode(preset?.mode ?? params.mode);
   const startSession = useRiteStore((s) => s.startSession);
 
-  const [state, setState] = useState<CheckInState | null>(null);
-  const [duration, setDuration] = useState<number | null>(null);
+  const [state, setState] = useState<CheckInState | null>(preset?.recommendedState ?? null);
+  const [duration, setDuration] = useState<number | null>(
+    preset?.recommendedDurationMinutes ?? null
+  );
   const [charge, setCharge] = useState<number | null>(null);
+  const [leadLayer, setLeadLayer] = useState<Layer | null>(preset?.leadLayer ?? null);
+
+  // If the preset changes mid-session (back-nav), re-sync defaults
+  useEffect(() => {
+    if (preset) {
+      setState(preset.recommendedState);
+      setDuration(preset.recommendedDurationMinutes);
+      setLeadLayer(preset.leadLayer);
+    }
+  }, [preset?.id]);
 
   const durations = getDurationsForMode(mode);
   const ready = state !== null && duration !== null;
 
   const onBegin = () => {
     if (!ready) return;
-    startSession(mode, state!, duration!, charge);
+    startSession({
+      mode,
+      state: state!,
+      durationMinutes: duration!,
+      chargeBefore: charge,
+      leadLayer,
+      presetId: preset?.id ?? null,
+    });
     router.push('/session');
   };
 
@@ -65,8 +89,22 @@ export default function CheckinScreen() {
               marginTop: 12,
             }}
           >
-            {MODE_LABELS[mode].title}
+            {preset?.title ?? MODE_LABELS[mode].title}
           </Text>
+          {preset ? (
+            <Text
+              style={{
+                fontFamily: TYPOGRAPHY.family.serifItalic,
+                color: COLORS.creamDim,
+                fontSize: 13,
+                textAlign: 'center',
+                marginTop: 6,
+                paddingHorizontal: 12,
+              }}
+            >
+              {preset.tagline}
+            </Text>
+          ) : null}
         </View>
 
         <Text
@@ -235,7 +273,7 @@ export default function CheckinScreen() {
           Honest read. We will measure the delta after.
         </Text>
 
-        <View style={{ marginBottom: 36 }}>
+        <View style={{ marginBottom: 28 }}>
           <ChargePicker
             value={charge}
             onChange={(n) => {
@@ -243,6 +281,72 @@ export default function CheckinScreen() {
               setCharge(n);
             }}
           />
+        </View>
+
+        <Text
+          style={{
+            fontFamily: TYPOGRAPHY.family.serif,
+            color: COLORS.cream,
+            fontSize: 22,
+            textAlign: 'center',
+            marginBottom: 6,
+          }}
+        >
+          What is loudest right now?
+        </Text>
+        <Text
+          style={{
+            fontFamily: TYPOGRAPHY.family.sansLight,
+            color: COLORS.creamDim,
+            fontSize: 12,
+            textAlign: 'center',
+            marginBottom: 16,
+          }}
+        >
+          Optional. The chosen layer leads and gets extended attention.
+        </Text>
+
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            gap: 8,
+            marginBottom: 36,
+          }}
+        >
+          {LAYERS.map((l) => {
+            const selected = leadLayer === l;
+            return (
+              <Pressable
+                key={l}
+                onPress={() => {
+                  haptics.select();
+                  setLeadLayer((cur) => (cur === l ? null : l));
+                }}
+                style={{
+                  flex: 1,
+                  paddingVertical: 10,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: selected ? COLORS.gold : COLORS.goldDim,
+                  backgroundColor: selected ? COLORS.surface : 'transparent',
+                  alignItems: 'center',
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: TYPOGRAPHY.family.sans,
+                    color: selected ? COLORS.cream : COLORS.creamDim,
+                    fontSize: 10,
+                    letterSpacing: 1.5,
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {l}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         <GoldButton label="Begin Rite" disabled={!ready} onPress={onBegin} />

@@ -37,6 +37,8 @@ interface UserPreferences {
   cycle: CycleTracking;
 }
 
+type LayerKey = 'Body' | 'Energy' | 'Mind' | 'Soul';
+
 interface CurrentSession {
   mode: Mode | null;
   currentState: CheckInState | null;
@@ -44,17 +46,21 @@ interface CurrentSession {
   stepIndex: number;
   chargeBefore: number | null;
   chargeAfter: number | null;
+  leadLayer: LayerKey | null;
+  presetId: string | null;
 }
 
 interface RiteActions {
   setGuide: (name: GuideName, voiceId: string) => void;
   completeOnboarding: () => void;
-  startSession: (
-    mode: Mode,
-    state: CheckInState,
-    durationMinutes: number,
-    chargeBefore: number | null
-  ) => void;
+  startSession: (args: {
+    mode: Mode;
+    state: CheckInState;
+    durationMinutes: number;
+    chargeBefore: number | null;
+    leadLayer?: LayerKey | null;
+    presetId?: string | null;
+  }) => void;
   advanceStep: () => void;
   resetSession: () => void;
   setChargeAfter: (n: number) => void;
@@ -103,6 +109,8 @@ const initialCurrent: CurrentSession = {
   stepIndex: 0,
   chargeBefore: null,
   chargeAfter: null,
+  leadLayer: null,
+  presetId: null,
 };
 
 function formatLocalDate(date: Date): string {
@@ -154,15 +162,24 @@ export const useRiteStore = create<RiteStore>()(
 
       completeOnboarding: () => set({ onboarded: true }),
 
-      startSession: (mode, currentState, durationMinutes, chargeBefore) =>
+      startSession: ({
+        mode,
+        state,
+        durationMinutes,
+        chargeBefore,
+        leadLayer = null,
+        presetId = null,
+      }) =>
         set({
           current: {
             mode,
-            currentState,
+            currentState: state,
             durationMinutes,
             stepIndex: 0,
             chargeBefore,
             chargeAfter: null,
+            leadLayer,
+            presetId,
           },
         }),
 

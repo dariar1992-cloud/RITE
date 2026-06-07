@@ -1,11 +1,13 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { AmbientOrb } from '@/components/AmbientOrb';
 import { Brand } from '@/components/Brand';
+import { DailyFragment } from '@/components/DailyFragment';
 import { PhasePill } from '@/components/PhasePill';
+import { PresetCard } from '@/components/PresetCard';
 import { ReadinessRing } from '@/components/ReadinessRing';
 import {
   ANIMATION,
@@ -17,6 +19,7 @@ import {
   recommendedModeForPhase,
 } from '@/constants/design';
 import { PHASES, computeCycleState } from '@/data/cycle';
+import { presetsForHour } from '@/data/presets';
 import { MODE_LABELS, type Mode } from '@/data/sessions';
 import {
   computeReadiness,
@@ -75,10 +78,15 @@ export default function HomeScreen() {
     [streak, lastSessionDate, lastDelta]
   );
 
+  const featuredPresets = useMemo(
+    () => presetsForHour(new Date().getHours()).slice(0, 4),
+    []
+  );
+
   return (
     <Animated.View
       entering={FadeIn.duration(ANIMATION.fadeDurationMs)}
-      style={{ flex: 1, backgroundColor: COLORS.obsidian, paddingHorizontal: 28 }}
+      style={{ flex: 1, backgroundColor: COLORS.obsidian }}
     >
       <AmbientOrb
         color={accent}
@@ -93,23 +101,28 @@ export default function HomeScreen() {
         opacity={1}
       />
 
-      <View style={{ paddingTop: 60, alignItems: 'center' }}>
-        <Brand />
-        <Text
-          style={{
-            fontFamily: TYPOGRAPHY.family.sans,
-            color: COLORS.goldDim,
-            fontSize: 10,
-            letterSpacing: 3,
-            textTransform: 'uppercase',
-            marginTop: 10,
-          }}
-        >
-          {PHASE_LABEL[phase]} · {date}
-        </Text>
-      </View>
+      <ScrollView
+        contentContainerStyle={{ paddingTop: 60, paddingBottom: 20, alignItems: 'center', gap: 24 }}
+        showsVerticalScrollIndicator={false}
+        style={{ flex: 1 }}
+      >
+        <View style={{ alignItems: 'center' }}>
+          <Brand />
+          <Text
+            style={{
+              fontFamily: TYPOGRAPHY.family.sans,
+              color: COLORS.goldDim,
+              fontSize: 10,
+              letterSpacing: 3,
+              textTransform: 'uppercase',
+              marginTop: 10,
+            }}
+          >
+            {PHASE_LABEL[phase]} · {date}
+          </Text>
+        </View>
 
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 28 }}>
+        <View style={{ alignItems: 'center', width: '100%', gap: 24, paddingHorizontal: 28 }}>
         <Text
           style={{
             fontFamily: TYPOGRAPHY.family.serif,
@@ -131,6 +144,46 @@ export default function HomeScreen() {
           <Pressable onPress={() => router.push('/cycle')}>
             <PhasePill phase={cycleState.phase} cycleDay={cycleState.cycleDay} />
           </Pressable>
+        ) : null}
+
+        <DailyFragment />
+
+        {featuredPresets.length > 0 ? (
+          <View style={{ width: '100%' }}>
+            <Text
+              style={{
+                fontFamily: TYPOGRAPHY.family.sans,
+                color: COLORS.gold,
+                fontSize: 9,
+                letterSpacing: 3,
+                textTransform: 'uppercase',
+                marginBottom: 10,
+                marginLeft: 4,
+              }}
+            >
+              For this moment
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 12, paddingRight: 28 }}
+              style={{ marginHorizontal: -28, paddingHorizontal: 28 }}
+            >
+              {featuredPresets.map((p) => (
+                <PresetCard
+                  key={p.id}
+                  preset={p}
+                  accent={accent}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/checkin',
+                      params: { mode: p.mode, preset: p.id },
+                    })
+                  }
+                />
+              ))}
+            </ScrollView>
+          </View>
         ) : null}
 
         <View style={{ width: '100%', gap: 12 }}>
@@ -234,14 +287,19 @@ export default function HomeScreen() {
             );
           })}
         </View>
-      </View>
+        </View>
+      </ScrollView>
 
       <View
         style={{
+          paddingHorizontal: 28,
           paddingBottom: 28,
+          paddingTop: 12,
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
+          borderTopWidth: 1,
+          borderTopColor: 'rgba(122,104,40,0.15)',
         }}
       >
         <Pressable
